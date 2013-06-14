@@ -230,9 +230,10 @@ class EditPage(BlogHandler):
         if not self.user:
             self.redirect('/login')
         else:
-            name = self.request.get("name")
+            title = self.request.get("title")
             content = self.request.get("content")
-            self.write(content)
+            self.write(title)
+        
             #p = Post(name = name, content = content)
             #p.put()
             #memcache.set(name, content)
