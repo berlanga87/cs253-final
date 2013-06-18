@@ -190,7 +190,7 @@ class Register(Signup):
             u.put()
 
             self.login(u)
-            self.write('Registered!')        
+            self.redirect('/')       
 
 class Login(BlogHandler):
     def get(self):
@@ -211,79 +211,41 @@ class Login(BlogHandler):
 class Logout(BlogHandler):
     def get(self):
         self.logout()
-        self.write('Goodbye!')
+        self.redirect('/')
 
 class EditPage(BlogHandler):
     def get(self, name):
         if not self.user:
             self.redirect('/login')
         else:
-            post = memcache.get(name)
-            if post:
-                self.write("an entry would show")
+            content = memcache.get(name)
+            if content:
+                self.render("edit_page.html", title = name, content = content)
             else:
-                self.render("edit_page.html", post = post, name = name)
-                #self.write("an entry empty would show")    
+                self.render("edit_page.html", title = name)
 
 
     def post(self, name):
         if not self.user:
             self.redirect('/login')
         else:
-            title = self.request.get("title")
             content = self.request.get("content")
-            self.write(title)
-        
-            #p = Post(name = name, content = content)
-            #p.put()
-            #memcache.set(name, content)
-
-            #self.redirect('%s' % name)
-            '''
-            if page exists:
-                update html to new one
-            else:
-                create entry in DB with post
-            '''        
+            p = Post(name = name, content = content)
+            p.put()
+            memcache.set(name, content)
+            self.redirect(name)
 
 
 class WikiPage(BlogHandler):
     def get(self, name):
-        if not memcache.get(name):
+        p = memcache.get(name)
+        if not p:
             if self.user:
-                #self.write("not in memcache, redirecting to edit page")
                 self.redirect('_edit%s' % name)
             else:
-                self.error(404)
+                self.redirect('/login')
         else:
-            if self.user:
-                self.write("not logged, entry would show")
-            else:                
-                self.write("logged, entry would show")
-
-        '''
-        post = memcache.get(name)
-
-        if self.user:
-            if post:
-                self.render("permalink.html", post = post)
-            else:
-                self.render("edit_page.html", name = name )
-
-        else:
-            if not post:
-                self.write("page not found")
-                return
-            else:            
-                self.render("permalink.html", post = post)
-
-        def post(self):
-            name = self.get("name")
-            content = self.get("content")
-         ''' 
-            
-
-
+                self.render('permalink.html', post = p, name = name)
 
 
 PAGE_RE = r'(/(?:[a-zA-Z0-9_-]+/?)*)'
@@ -292,6 +254,7 @@ app = webapp2.WSGIApplication([('/signup', Register),
                                ('/logout', Logout),
                                ('/_edit' + PAGE_RE, EditPage),
                                (PAGE_RE, WikiPage),
+                               ('/', WikiPage)
                                ],
                               #debug=DEBUG
                               )
